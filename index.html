@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management UI (Kanban)</title>
+    <!-- Using Google Fonts for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Material Icons for generic icons like comments, attachments, etc. -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+   
+
+</head>
+<body>
+
+    <div class="dashboard-container">
+        
+        <!-- --- MAIN KANBAN BOARD AREA --- -->
+        <div class="kanban-board-area">
+            <div class="board-header">
+                <h1>Homepage Design</h1>
+                <!-- Simple avatar group for demonstration -->
+                <div style="display: flex; gap: 5px; margin-bottom: 20px;">
+                    <div class="avatar-pill" style="background-color: #a78bfa;">A</div>
+                    <div class="avatar-pill" style="background-color: #34d399;">K</div>
+                    <div class="avatar-pill" style="background-color: #fb7185;">J</div>
+                    <div class="avatar-pill" style="background-color: #d1d5db; color: #333; cursor: pointer;">+</div>
+                    
+                    <!-- NEW: Tag Management Button -->
+                    <button id="manageTagsButton" onclick="toggleTagManager()" style="margin-left: 15px; padding: 5px 10px; font-size: 14px; background-color: #e9ecef; color: var(--text-dark); border: none; border-radius: 6px; cursor: pointer;">
+                        Manage Tags
+                    </button>
+                </div>
+                
+                <!-- NEW: Tag Management UI -->
+                <div id="tagManager" class="tag-manager">
+                    <div class="tag-management-header">
+                        <span>Define Custom Task Categories</span>
+                        <button onclick="toggleTagManager()" style="background: none; border: none; font-size: 20px; color: #aaa; cursor: pointer;">&times;</button>
+                    </div>
+                    <div class="tag-input-group">
+                        <input type="text" id="newTagName" placeholder="New Tag Name (e.g., QA Test)">
+                        <input type="color" id="newTagColor" value="#ffbe76" style="width: 50px; padding: 2px;">
+                        <button onclick="addNewTag()">Add Category</button>
+                    </div>
+                    <div id="tagListDisplay" class="tag-list-display">
+                        <!-- Dynamic tag chips go here -->
+                    </div>
+                </div>
+
+                <!-- New Task Input -->
+                <div class="input-area">
+                    <input type="text" id="newTaskInput" placeholder="Enter new task title...">
+                    <button id="addTaskButton">Add Task</button>
+                </div>
+                <div id="suggestionBox" style="display: none;">
+                    ML Suggestion: <span id="suggestedTag"></span> (<span id="suggestedPriority"></span>). Click to apply.
+                </div>
+                <div id="messageBox"></div>
+            </div>
+
+            <div class="kanban-columns">
+                <!-- Column 1: Task Ready -->
+                <div id="column-ready" class="column">
+                    <div class="column-header">Task Ready (<span id="count-ready">0</span>)</div>
+                    <div id="taskList-ready" class="task-list-container" 
+                         ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'ready')"></div>
+                </div>
+
+                <!-- Column 2: In Progress -->
+                <div id="column-progress" class="column">
+                    <div class="column-header">In Progress (<span id="count-progress">0</span>)</div>
+                    <div id="taskList-progress" class="task-list-container" 
+                         ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'progress')"></div>
+                </div>
+
+                <!-- Column 3: Needs Review -->
+                <div id="column-review" class="column">
+                    <div class="column-header">Needs Review (<span id="count-review">0</span>)</div>
+                    <div id="taskList-review" class="task-list-container" 
+                         ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'review')"></div>
+                </div>
+
+                <!-- Column 4: Done -->
+                <div id="column-done" class="column">
+                    <div class="column-header">Done (<span id="count-done">0</span>)</div>
+                    <div id="taskList-done" class="task-list-container" 
+                         ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'done')"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- --- SIDEBAR AREA --- -->
+        <div class="sidebar">
+            <div class="progress-section">
+                <h3>Task Progress</h3>
+                
+                <!-- Progress Items (Rendered dynamically by JS) -->
+                <div id="progressItemsContainer">
+                    <!-- Dynamic Progress Items go here -->
+                </div>
+            </div>
+
+            <!-- New: Productivity Insights Section -->
+            <div class="insights-section">
+                <h3>Productivity Insights</h3>
+                <div id="difficultyInsights">
+                    <!-- Dynamic Difficulty Insights go here -->
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 15px;">
+                    *Insights based on historical completion rate of task types.
+                </div>
+            </div>
+            
+            <hr style="background: #eee; height: 1px; border: none; margin: 30px 0;">
+
+            <div class="activity-section">
+                <h3>Recent Activity</h3>
+                <div id="activityList">
+                    <!-- Dynamic activity items will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- --- TASK DETAILS MODAL (Added back from conversation history) --- -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-task-title"></h2>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <div class="modal-main">
+                    <!-- Comments Section -->
+                    <div class="modal-section">
+                        <h4>Comments (<span id="modal-comment-count">0</span>)</h4>
+                        <div class="comment-input-area">
+                            <input type="text" id="commentInput" placeholder="Add a comment...">
+                            <button onclick="addComment()">Send</button>
+                        </div>
+                        <div id="commentList" class="comment-list">
+                            <!-- Dynamic comments go here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Documents Section -->
+                    <div class="modal-section">
+                        <h4>Documents (<span id="modal-document-count">0</span>)</h4>
+                        <div class="document-input-area">
+                            <input type="file" id="fileInput" style="display: none;" onchange="handleDocumentUpload(this.files)">
+                            <button onclick="document.getElementById('fileInput').click()">
+                                <i class="material-icons" style="font-size: 16px; margin-right: 5px; vertical-align: middle;">attach_file</i> 
+                                Attach Document
+                            </button>
+                        </div>
+                        <div id="documentList" class="document-list">
+                            <!-- Dynamic documents go here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-sidebar">
+                    <div class="modal-section">
+                        <h4>Details</h4>
+                        <p style="font-size: 14px; margin-bottom: 8px;">Status: <strong id="modal-status"></strong></p>
+                        <p style="font-size: 14px; margin-bottom: 8px;">Tag: <strong id="modal-tag"></strong></p>
+                        <p style="font-size: 14px; margin-bottom: 8px;">Priority: <strong id="modal-priority"></strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+     <script src="script.js"></script>
+
+
+    
+</body>
+</html>
